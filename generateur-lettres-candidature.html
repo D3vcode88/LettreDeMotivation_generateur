@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de lettres de candidature — v4.0</title>
+<style>
+  :root {
+    --indigo: #4338ca; --indigo-light: #6366f1; --slate-900: #0f172a;
+    --border: #e2e8f0; --bg: #f8fafc; --text: #1e293b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: linear-gradient(to right, #4338ca, #0f172a); color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.25rem; }
+  header p { font-size: .85rem; color: #c7d2fe; margin-top: 4px; }
+  nav { display: flex; gap: 8px; padding: 14px 24px; background: #fff; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  nav button { padding: 8px 16px; border-radius: 8px; font-size: .85rem; font-weight: 500; border: 1px solid var(--border); background: #fff; color: #475569; cursor: pointer; }
+  nav button.active { background: var(--indigo-light); color: #fff; border-color: var(--indigo-light); }
+  nav button:hover:not(.active) { background: #f1f5f9; }
+  main { max-width: none; margin: 0; padding: 24px; display: grid; gap: 20px; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .row { display: flex; gap: 8px; }
+  label { display: block; font-size: .7rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  input, textarea { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: .875rem; font-family: inherit; }
+  input:focus, textarea:focus { outline: none; box-shadow: 0 0 0 2px rgba(99,102,241,.4); }
+  textarea { min-height: 110px; resize: vertical; }
+  textarea.mono { font-family: ui-monospace, monospace; font-size: .78rem; line-height: 1.6; min-height: 60vh; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: .85rem; font-weight: 500; border: none; cursor: pointer; }
+  .btn-primary { background: var(--indigo-light); color: #fff; }
+  .btn-primary:hover { background: var(--indigo); }
+  .btn-dark { background: var(--slate-900); color: #fff; }
+  .btn-dark:hover { background: #1e293b; }
+  .btn-green { background: #059669; color: #fff; }
+  .btn-green:hover { background: #047857; }
+  .btn-red { background: #dc2626; color: #fff; }
+  .btn-red:hover { background: #b91c1c; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .hint { font-size: .75rem; color: #64748b; }
+  .warn { font-size: .78rem; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px; margin-top: 8px; }
+  .ok { font-size: .82rem; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 6px 12px; display: inline-block; margin-top: 12px; }
+  .dropzone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; transition: .2s; }
+  .dropzone.over { border-color: var(--indigo-light); background: #eef2ff; }
+  .dropzone .big { font-size: 2rem; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: .78rem; }
+  .steps-nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
+  .cols > div { min-width: 0; }
+  @media (max-width: 800px) { .cols { grid-template-columns: 1fr; } }
+  .preview { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 16px; font-size: .875rem; line-height: 1.65; min-height: auto; max-height: auto; overflow: auto; }
+  .preview div { min-height: 1.65em; overflow-wrap: break-word; word-break: break-word; max-width: 100%; }
+  .preview > div:first-child > div { flex: 0 1 auto; min-width: 0; }
+  .preview .right { text-align: right; }
+  .preview .email { color: #2563eb; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { font-size: .75rem; background: #f1f5f9; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+  .chip:hover { background: #e0e7ff; }
+  .view-btn.active { background: #e0e7ff; border-color: var(--indigo-light); font-weight: 600; }
+  /* Mode d'affichage : modèle seul ou aperçu seul occupe toute la largeur */
+  .cols.solo { grid-template-columns: 1fr !important; }
+  .cols.solo .hidden-pane { display: none !important; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--slate-900); color: #fff; font-size: .85rem; padding: 10px 16px; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.25); display: none; z-index: 50; }
+  .hidden { display: none !important; }
+  footer { text-align: center; font-size: .72rem; color: #94a3b8; padding: 16px; }
+  .section-title { font-weight: 600; font-size: .9rem; margin-bottom: 10px; }
+  .optional { opacity: .8; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📝 Générateur de lettres de candidature</h1>
+  <p>Analyse l'entreprise → importe ton profil → rédige ta lettre, le reste s'intègre automatiquement.</p>
+</header>
+
+<nav>
+  <button id="tab1" class="active" onclick="setStep(1)">1. Entreprise</button>
+  <button id="tab2" onclick="setStep(2)">2. Mon profil</button>
+  <button id="tab3" onclick="setStep(3)">3. Lettre</button>
+</nav>
+
+<main>
+
+  <!-- ===== ÉTAPE 1 : ENTREPRISE ===== -->
+  <section id="step1">
+    <div class="card">
+      <label for="url">URL du site web de l'entreprise</label>
+      <div class="row">
+        <input id="url" type="text" placeholder="https://www.exemple-entreprise.fr" onkeydown="if(event.key==='Enter')analyzeUrl()">
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeUrl()">🔍 Analyser</button>
+      </div>
+      <div id="fetchError" class="warn hidden"></div>
+    </div>
+
+    <div id="companyCard" class="card hidden">
+      <p class="hint" style="margin-bottom:12px">⏸️ <strong>Étape de vérification obligatoire</strong> — contrôlez les informations extraites, corrigez-les si besoin, puis validez pour passer à la suite.</p>
+      <div class="grid2">
+        <div><label>Nom de l'entreprise</label><input id="c_name"></div>
+        <div><label>Secteur d'activité</label><input id="c_sector"></div>
+        <div><label>Adresse</label><input id="c_address"></div>
+        <div><label>Personne cible (optionnel)</label><input id="c_contact" placeholder="ex. Mme Martin, Service RH"></div>
+        <div><label>Ville</label><input id="c_city"></div>
+        <div><label>Code postal (entreprise)</label><input id="c_postal"></div>
+      </div>
+      <div style="margin-top:12px"></div>
+      <div id="socialsBox" class="hidden" style="margin-top:12px">
+        <label>Réseaux détectés</label><div id="socials" class="chips"></div>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn btn-dark" id="validateBtn" onclick="validateCompany()">✅ Valider et continuer vers mon profil →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ÉTAPE 2 : PROFIL ===== -->
+  <section id="step2" class="hidden">
+    <div class="dropzone" id="dropzone">
+      <div class="big">📄</div>
+      <p style="font-weight:500;margin:8px 0 4px">Dépose ici ton fichier <code>markdown.md</code></p>
+      <p class="hint">Champs reconnus (une ligne par info, <code>clé: valeur</code>) : <code>Nom</code>, <code>Prenom</code>, <code>Email</code>, <code>Email secondaire</code> (optionnel), <code>Téléphone</code>, <code>Adresse</code>, <code>Code postal</code>, <code>Ville</code>, <code>Poste ciblé</code>, <code>Poste ciblé</code></p>
+      <input type="file" id="fileInput" accept=".md,.markdown,.txt" class="hidden">
+      <button class="btn btn-primary" style="margin-top:12px" onclick="document.getElementById('fileInput').click()">Parcourir…</button>
+      <div><span id="mdStatus" class="ok hidden"></span></div>
+    </div>
+
+    <div class="card">
+      <p class="hint" style="margin-bottom:12px">Tes informations (remplies par l'import ou saisie manuelle).</p>
+      <div class="grid2">
+        <div><label>Nom</label><input data-p="nom"></div>
+        <div><label>Prénom</label><input data-p="prenom"></div>
+        <div><label>Email</label><input data-p="email" type="email"></div>
+        <div class="optional"><label>Email secondaire (optionnel)</label><input data-p="email_secondaire" type="email"></div>
+        <div><label>Téléphone</label><input data-p="telephone" type="tel"></div>
+        <div><label>Adresse</label><input data-p="adresse"></div>
+        <div><label>Code postal</label><input data-p="code_postal"></div>
+        <div><label>Ville</label><input data-p="ville_perso"></div>
+        <div><label>Poste ciblé</label><input data-p="poste" placeholder="ex. Ingénieur DevSecOps"></div>
+      </div>
+      <div style="margin-top:16px"><button class="btn btn-dark" onclick="setStep(3)">Passer à la rédaction →</button></div>
+    </div>
+  </section>
+
+  <!-- ===== ÉTAPE 3 : LETTRE ===== -->
+  <section id="step3" class="hidden">
+    <div class="card steps-nav" style="padding:10px 16px;margin-bottom:4px">
+      <span class="hint" style="font-weight:600">Affichage</span>
+      <div class="row">
+        <button class="chip view-btn active" data-view="cols" onclick="setView('cols')">⿴ Deux colonnes</button>
+        <button class="chip view-btn" data-view="model" onclick="setView('model')">✏️ Modèle seul</button>
+        <button class="chip view-btn" data-view="preview" onclick="setView('preview')">👁 Aperçu seul</button>
+      </div>
+    </div>
+    <div class="cols" id="letterCols">
+      <div id="modelPane" style="display:grid;gap:16px">
+        <div class="card">
+          <div class="steps-nav" style="margin-bottom:8px">
+            <span class="hint" style="font-weight:600">Modèle (éditable — placeholders <code>{{clé}}</code>)</span>
+            <button class="chip" onclick="document.getElementById('letterArea').value=LETTER_TEMPLATE;render()">Réinitialiser</button>
+          </div>
+          <textarea id="letterArea" class="mono" oninput="render()"></textarea>
+        </div>
+        <div class="card">
+          <label>Insérer un champ</label>
+          <div id="chips" class="chips"></div>
+          <div id="unusedWarn" class="warn hidden" style="margin-top:10px"></div>
+        </div>
+      </div>
+        <div id="previewPane" class="card">
+        <div class="steps-nav" style="margin-bottom:12px">
+          <span style="font-weight:600;font-size:.85rem">Aperçu final</span>
+          <div class="row">
+            <button class="btn" style="background:#f1f5f9;border:1px solid var(--border)" onclick="copyLetter()">📋 Copier</button>
+            <button class="btn btn-green" onclick="exportMd()">⬇️ Exporter .md</button>
+            <button class="btn btn-red" onclick="exportPdf()">📄 Exporter PDF</button>
+          </div>
+        </div>
+        <div id="preview" class="preview"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Version 4.0 — Les données restent locales dans ton navigateur — aucun envoi serveur.</footer>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+// ================= ÉTAT =================
+var company = null;
+var personal = {};
+var LETTER_TEMPLATE = [
+  "{{prenom}} {{nom}}",
+  "{{email}}",
+  "{{adresse}}",
+  "{{code_postal}} {{ville_perso}}",
+  "{{droite}}",
+  "{{entreprise}}",
+  "{{adresse_entreprise}}",
+  "{{code_postal_entreprise}} {{ville_entreprise}}",
+  "{{fin droite}}",
+  "",
+  "Objet : Candidature au poste de {{poste}}",
+  "",
+  "Bonjour Madame, Monsieur,",
+  "",
+  "{{contenu}}",
+  "",
+  "{{signature}}"
+].join("\n");
+
+var PROFILE_FIELDS = [
+  { key: "nom", aliases: ["nom", "lastname", "last name"] },
+  { key: "prenom", aliases: ["prenom", "prénom", "firstname", "first name"] },
+  { key: "email", aliases: ["email", "e-mail", "mail", "adresse mail"] },
+  { key: "email_secondaire", aliases: ["email secondaire", "email_secondaire", "e-mail secondaire", "email 2", "mail secondaire"] },
+  { key: "telephone", aliases: ["telephone", "téléphone", "tel", "portable", "mobile", "numéro", "numero"] },
+  { key: "adresse", aliases: ["adresse", "rue"] },
+  { key: "code_postal", aliases: ["code postal", "code_postal", "cp", "zipcode"] },
+  { key: "ville_perso", aliases: ["ville", "city"] },
+  { key: "poste", aliases: ["poste", "poste ciblé", "poste visé", "poste cible", "post ciblé", "job", "intitulé du poste"] }
+];
+
+// ================= ÉTAPE 1 : ANALYSE URL =================
+function analyzeUrl() {
+  var urlInput = document.getElementById("url");
+  var target = urlInput.value.trim();
+  if (!target) return;
+  if (!/^https?:\/\//.test(target)) target = "https://" + target;
+  urlInput.value = target;
+  var btn = document.getElementById("analyzeBtn");
+  btn.disabled = true; btn.textContent = "Analyse…";
+  document.getElementById("fetchError").classList.add("hidden");
+  hide("companyCard");
+
+  var attempts = [
+    target,
+    "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
+    "https://r.jina.ai/" + target
+  ];
+  var i = 0;
+  function tryNext() {
+    if (i >= attempts.length) {
+      document.getElementById("fetchError").textContent =
+        "⚠️ Impossible de récupérer le site directement (blocage CORS/CGU du navigateur). Remplis les champs manuellement ci-dessous.";
+      document.getElementById("fetchError").classList.remove("hidden");
+      company = { url: target, name: "", tagline: "", description: "", sector: "", email: "", phone: "", city: "", socials: [], rawText: "" };
+      fillCompanyForm();
+      btn.disabled = false; btn.textContent = "🔍 Analyser";
+      return;
+    }
+    var attempt = attempts[i++];
+    var controller = new AbortController();
+    var timeout = setTimeout(function() { controller.abort(); }, 12000);
+    fetch(attempt, { signal: controller.signal })
+      .then(function(r) { if (!r.ok) throw new Error("http"); return r.text(); })
+      .then(function(text) {
+        clearTimeout(timeout);
+        if (!text || text.length < 200) throw new Error("empty");
+        var isReader = attempt.indexOf("r.jina.ai") !== -1;
+        company = isReader ? extractFromReader(text, target) : extractFromHtml(text, target);
+        fillCompanyForm();
+        btn.disabled = false; btn.textContent = "🔍 Analyser";
+      })
+      .catch(function() { clearTimeout(timeout); tryNext(); });
+  }
+  tryNext();
+}
+
+function extractFromHtml(html, url) {
+  var doc = new DOMParser().parseFromString(html, "text/html");
+  function meta(sel) { var el = doc.querySelector(sel); return el ? (el.getAttribute("content") || "").trim() : ""; }
+  var title = (doc.querySelector("title") || {}).textContent || "";
+  var description = meta('meta[name="description"]') || meta('meta[property="og:description"]');
+  var tagline = (meta('meta[property="og:title"]') || title).trim();
+  var keywords = meta('meta[name="keywords"]');
+  var bodyText = (doc.body ? doc.body.textContent : "").replace(/\s+/g, " ").trim().slice(0, 4000);
+  var emailMatch = bodyText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  var phoneMatch = bodyText.match(/(?:\+33|0)[1-9](?:[\s.-]?\d{2}){4}/);
+  var socials = {};
+  doc.querySelectorAll('a[href*="linkedin.com"],a[href*="twitter.com"],a[href*="x.com"],a[href*="github.com"],a[href*="facebook.com"]').forEach(function(a) {
+    var href = a.getAttribute("href") || "";
+    if (href.indexOf("http") === 0) socials[href.split("?")[0]] = true;
+  });
+  var cities = ["Paris","Lyon","Marseille","Toulouse","Bordeaux","Lille","Nantes","Strasbourg","Nice","Rennes","Montpellier","Grenoble","Dijon","Rouen","Orléans","Angers","Clermont-Ferrand","Nancy","Metz","Caen","Reims","Tours","Annecy","La Rochelle","Pau","Limoges","Amiens","Le Mans","Brest","Toulon"];
+  var city = cities.filter(function(c) { return bodyText.indexOf(c) !== -1; })[0] || "";
+  var domain = "";
+  try { domain = new URL(url).hostname.replace("www.", "").split(".")[0]; } catch (e) {}
+  var siteName = meta('meta[property="og:site_name"]') || title.split(/[|\-–·:]/)[0].trim() || domain;
+  return {
+    url: url, name: siteName,
+    tagline: tagline.replace(siteName, "").replace(/^[|\-–·:\s]+/, "").trim(),
+    description: description || bodyText.slice(0, 400),
+    sector: keywords, email: emailMatch ? emailMatch[0] : "",
+    phone: phoneMatch ? phoneMatch[0] : "", city: city,
+    socials: Object.keys(socials), rawText: bodyText
+  };
+}
+
+function extractFromReader(text, url) {
+  var titleMatch = text.match(/^Title:\s*(.+)$/m);
+  var emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  var domain = "";
+  try { domain = new URL(url).hostname.replace("www.", "").split(".")[0]; } catch (e) {}
+  return {
+    url: url, name: titleMatch ? titleMatch[1] : domain, tagline: "",
+    description: text.split("\n").slice(0, 60).join(" ").replace(/\s+/g, " ").slice(0, 400),
+    sector: "", email: emailMatch ? emailMatch[0] : "", phone: "", city: "",
+    socials: [], rawText: text.slice(0, 4000)
+  };
+}
+
+function fillCompanyForm() {
+  document.getElementById("c_name").value = company.name;
+  document.getElementById("c_sector").value = company.sector;
+  document.getElementById("c_city").value = company.city;
+  document.getElementById("c_postal").value = company.postal || "";
+  document.getElementById("c_address").value = company.address || "";
+  document.getElementById("c_contact").value = company.contact || "";
+  var box = document.getElementById("socialsBox"), list = document.getElementById("socials");
+  list.innerHTML = "";
+  if (company.socials && company.socials.length) {
+    company.socials.forEach(function(s) {
+      var span = document.createElement("span");
+      span.className = "chip"; span.textContent = s;
+      list.appendChild(span);
+    });
+    box.classList.remove("hidden");
+  } else box.classList.add("hidden");
+  show("companyCard");
+  updateValidateBtn();
+  render();
+}
+
+function readCompanyForm() {
+  if (!company) return;
+  company.name = document.getElementById("c_name").value;
+  company.sector = document.getElementById("c_sector").value;
+  company.city = document.getElementById("c_city").value;
+  company.postal = document.getElementById("c_postal").value;
+  company.address = document.getElementById("c_address").value;
+  company.contact = document.getElementById("c_contact").value;
+  updateValidateBtn();
+  render();
+}
+["c_name","c_sector","c_city","c_postal","c_address","c_contact"].forEach(function(id) {
+  document.getElementById(id).addEventListener("input", readCompanyForm);
+});
+
+function updateValidateBtn() {
+  var btn = document.getElementById("validateBtn");
+  var hasName = company && company.name.trim().length > 0;
+  btn.disabled = !hasName;
+  btn.title = hasName ? "" : "Renseigne au minimum le nom de l'entreprise pour valider";
+}
+
+function validateCompany() {
+  if (!company || !company.name.trim()) return;
+  setStep(2);
+}
+
+// ================= ÉTAPE 2 : PROFIL =================
+function normalizeKey(raw) {
+  var norm = raw.toLowerCase().replace(/[\s_]+/g, " ").replace(/[.*]/g, "").trim();
+  for (var i = 0; i < PROFILE_FIELDS.length; i++) {
+    if (PROFILE_FIELDS[i].aliases.indexOf(norm) !== -1) return PROFILE_FIELDS[i].key;
+  }
+  return "";
+}
+
+function parsePersonalMarkdown(md) {
+  var info = {};
+  var yaml = md.match(/^---\n([\s\S]*?)\n---/);
+  var body = yaml ? yaml[1] : md;
+  body.split("\n").forEach(function(line) {
+    var m = line.match(/^\s*-?\s*\*?\*?([A-Za-zÀ-ÿ0-9 _-]+?)\*?\*?\s*:\s*(.+)\s*$/);
+    if (m) {
+      var key = normalizeKey(m[1]);
+      var val = m[2].replace(/^["']|["']$/g, "").replace(/\*\*/g, "").trim();
+      if (key && val) info[key] = val;
+    }
+  });
+  return info;
+}
+
+function handleMdFile(text, name) {
+  personal = parsePersonalMarkdown(text);
+  var count = PROFILE_FIELDS.filter(function(f) { return personal[f.key]; }).length;
+  var status = document.getElementById("mdStatus");
+  status.textContent = "✅ " + name + " — " + count + "/" + PROFILE_FIELDS.length + " champs reconnus";
+  status.classList.remove("hidden");
+  PROFILE_FIELDS.forEach(function(f) {
+    var input = document.querySelector('[data-p="' + f.key + '"]');
+    if (input && personal[f.key]) input.value = personal[f.key];
+  });
+  render();
+}
+
+var dropzone = document.getElementById("dropzone");
+dropzone.addEventListener("dragover", function(e) { e.preventDefault(); dropzone.classList.add("over"); });
+dropzone.addEventListener("dragleave", function() { dropzone.classList.remove("over"); });
+dropzone.addEventListener("drop", function(e) {
+  e.preventDefault(); dropzone.classList.remove("over");
+  var f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function() { handleMdFile(String(reader.result || ""), f.name); };
+  reader.readAsText(f);
+});
+document.getElementById("fileInput").addEventListener("change", function(e) {
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function() { handleMdFile(String(reader.result || ""), f.name); };
+  reader.readAsText(f);
+});
+document.querySelectorAll("[data-p]").forEach(function(input) {
+  input.addEventListener("input", function() {
+    personal[input.getAttribute("data-p")] = input.value;
+    render();
+  });
+});
+
+// ================= ÉTAPE 3 : RENDU =================
+function allValues() {
+  var vals = {};
+  Object.keys(personal).forEach(function(k) { vals[k] = personal[k]; });
+  if (company) {
+    vals.entreprise = company.name;
+    vals.url = company.url;
+    vals.secteur = company.sector || (company.description || "").slice(0, 60);
+    vals.ville_entreprise = company.city;
+    vals.code_postal_entreprise = company.postal || "";
+    vals.adresse_entreprise = company.address || "";
+    vals.personne_cible = company.contact || "";
+    vals.atout_entreprise = company.tagline || (company.description || "").slice(0, 80);
+  }
+  vals.ville = (company && company.city) || personal.ville_perso || "";
+  vals.date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return vals;
+}
+
+function renderedText() {
+  var out = document.getElementById("letterArea").value;
+  var vals = allValues();
+  Object.keys(vals).forEach(function(k) {
+    out = out.split("{{" + k + "}}").join(vals[k] || "");
+  });
+  // préserver les marqueurs d'alignement, supprimer les autres placeholders
+  out = out.split("{{droite}}").join("\u0001D\u0001").split("{{fin droite}}").join("\u0001F\u0001");
+  out = out.replace(/\{\{[^}]+\}\}/g, "");
+  return out.split("\u0001D\u0001").join("{{droite}}").split("\u0001F\u0001").join("{{fin droite}}");
+}
+
+// Texte nettoyé des marqueurs d'alignement, pour les exports (.md / PDF / copie)
+function exportText() {
+  return renderedText()
+    .replace(/\{\{droite\}\}\n?/g, "")
+    .replace(/\{\{fin droite\}\}\n?/g, "");
+}
+
+function addPreviewLine(parent, text, right) {
+  var div = document.createElement("div");
+  if (right) div.className = "right";
+  if (/^[^@\s]+@[^@\s]+\.[a-z]{2,}/i.test(text.trim())) div.className = (div.className ? div.className + " " : "") + "email";
+  div.textContent = text;
+  parent.appendChild(div);
+}
+
+function render() {
+  // Aperçu structuré : infos personnelles en haut à gauche, bloc entreprise en dessous
+  // aligné à droite, puis l'objet, la salutation et le corps — marqueurs {{droite}} / {{fin droite}}
+  var preview = document.getElementById("preview");
+  preview.innerHTML = "";
+  var lines = renderedText().split("\n");
+  var start = -1, end = -1;
+  for (var i = 0; i < lines.length; i++) {
+    if (lines[i].indexOf("{{droite}}") !== -1 && start === -1) start = i;
+    else if (lines[i].indexOf("{{fin droite}}") !== -1 && end === -1) end = i;
+  }
+  if (start !== -1 && end !== -1) {
+    // infos personnelles en haut (gauche), puis bloc entreprise en dessous, aligné à droite
+    var before = lines.slice(0, start);
+    var companyLines = lines.slice(start + 1, end);
+    var after = lines.slice(end + 1);
+    while (after.length && after[0].trim() === "") after.shift();
+    before.forEach(function(l) { addPreviewLine(preview, l, false); });
+    var spacer = document.createElement("div");
+    spacer.style.cssText = "height:14px";
+    preview.appendChild(spacer);
+    companyLines.forEach(function(l) { addPreviewLine(preview, l, true); });
+    lines = after;
+  }
+  lines.forEach(function(line) { addPreviewLine(preview, line, false); });
+  // champs insérables
+  var chips = document.getElementById("chips");
+  chips.innerHTML = "";
+  var keys = {};
+  PROFILE_FIELDS.forEach(function(f) { keys[f.key] = true; });
+  Object.keys(allValues()).forEach(function(k) { keys[k] = true; });
+  ["poste", "statut", "signature"].forEach(function(k) { keys[k] = true; });
+  Object.keys(keys).forEach(function(k) {
+    var b = document.createElement("button");
+    b.className = "chip"; b.textContent = k;
+    b.onclick = function() {
+      document.getElementById("letterArea").value += "\n{{" + k + "}}";
+      render();
+    };
+    chips.appendChild(b);
+  });
+  // champs sans valeur
+  var letter = document.getElementById("letterArea").value;
+  var found = letter.match(/\{\{([^}]+)\}\}/g) || [];
+  var unused = [];
+  var vals = allValues();
+  found.forEach(function(p) {
+    var key = p.slice(2, -2).trim();
+    if (key === "droite" || key === "fin droite" || key === "contenu") return; // zone de rédaction, pas une donnée manquante
+    if (!vals[key] && unused.indexOf(key) === -1) unused.push(key);
+  });
+  var warn = document.getElementById("unusedWarn");
+  if (unused.length) {
+    warn.textContent = "⚠️ Champs sans valeur : " + unused.join(", ");
+    warn.classList.remove("hidden");
+  } else warn.classList.add("hidden");
+}
+
+// ================= EXPORTS =================
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.style.display = "none"; }, 3000);
+}
+
+function downloadFile(bytes, mime, filename) {
+  var blob = new Blob([bytes], { type: mime });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { URL.revokeObjectURL(url); a.remove(); }, 2000);
+  showToast("✅ " + filename + " généré");
+}
+
+function fileBase() {
+  var base = ((company && company.name) || "candidature").toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return base || "candidature";
+}
+
+function exportMd() {
+  downloadFile(exportText(), "text/markdown;charset=utf-8", "lettre-" + fileBase() + ".md");
+}
+
+function copyLetter() {
+  var text = renderedText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { showToast("📋 Lettre copiée"); });
+  } else {
+    var ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove();
+    showToast("📋 Lettre copiée");
+  }
+}
+
+function exportPdf() {
+  // Découpage des lignes (~92 caractères) + bloc entreprise aligné à droite
+  var lines = [];
+  var inRight = false;
+  renderedText().split("\n").forEach(function(l) {
+    if (l.indexOf("{{droite}}") !== -1) { inRight = true; return; }
+    if (l.indexOf("{{fin droite}}") !== -1) { inRight = false; return; }
+    if (l.trim() === "") { lines.push({ text: "", right: inRight }); return; }
+    var words = l.split(" "), cur = "";
+    words.forEach(function(w) {
+      if ((cur + (cur ? " " : "") + w).length > 92) { lines.push({ text: cur, right: inRight }); cur = w; }
+      else cur += (cur ? " " : "") + w;
+    });
+    lines.push({ text: cur, right: inRight });
+  });
+
+  var LINES_PER_PAGE = 53;
+  var pageCount = Math.max(1, Math.ceil(lines.length / LINES_PER_PAGE));
+  function esc(s) { return s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); }
+  // Largeur approximative du texte en Helvetica 11 pt (~0,55 em par caractère)
+  function lineWidth(s) { return 11 * 0.55 * s.length; }
+
+  var contentObjs = [];
+  for (var p = 0; p < pageCount; p++) {
+    var pageLines = lines.slice(p * LINES_PER_PAGE, (p + 1) * LINES_PER_PAGE);
+    contentObjs.push(
+      "BT\n/F1 11 Tf\n14 TL\n" +
+      pageLines.map(function(l, i) {
+        var y = 786 - 14 * i;
+        var x = l.right ? Math.max(56, Math.round(539 - lineWidth(l.text))) : 56;
+        return "1 0 0 1 " + x + " " + y + " Tm\n(" + esc(l.text) + ") Tj";
+      }).join("\n") + "\nET"
+    );
+  }
+
+  var objects = [];
+  objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+  var kids = [];
+  for (var k = 0; k < pageCount; k++) kids.push((4 + k) + " 0 R");
+  objects[1] = "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + pageCount + " >>";
+  objects[2] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+  for (var q = 0; q < pageCount; q++) {
+    objects[3 + q] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents " + (4 + pageCount + q) + " 0 R >>";
+  }
+  for (var r = 0; r < pageCount; r++) {
+    objects[3 + pageCount + r] = "<< /Length " + contentObjs[r].length + " >>\nstream\n" + contentObjs[r] + "\nendstream";
+  }
+
+  var pdf = "%PDF-1.4\n";
+  var offsets = [];
+  objects.forEach(function(body, i) {
+    offsets[i] = pdf.length;
+    pdf += (i + 1) + " 0 obj\n" + body + "\nendobj\n";
+  });
+  var xrefPos = pdf.length;
+  pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n";
+  offsets.forEach(function(o) { pdf += String(o).padStart(10, "0") + " 00000 n \n"; });
+  pdf += "trailer\n<< /Size " + (objects.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xrefPos + "\n%%EOF";
+
+  // Latin-1 -> octets
+  var bytes = new Uint8Array(pdf.length);
+  for (var i = 0; i < pdf.length; i++) {
+    var c = pdf.charCodeAt(i);
+    bytes[i] = c > 255 ? 63 : c;
+  }
+  downloadFile(bytes, "application/pdf", "lettre-" + fileBase() + ".pdf");
+}
+
+// ================= MODE D'AFFICHAGE (étape 3) =================
+var currentView = "cols";
+function setView(view) {
+  currentView = view;
+  var cols = document.getElementById("letterCols");
+  var modelPane = document.getElementById("modelPane");
+  var previewPane = document.getElementById("previewPane");
+  // en vue solo, la zone visible s'étend sur toute la largeur
+  cols.classList.toggle("solo", view !== "cols");
+  modelPane.classList.toggle("hidden-pane", view === "preview");
+  previewPane.classList.toggle("hidden-pane", view === "model");
+  document.querySelectorAll(".view-btn").forEach(function(b) {
+    b.classList.toggle("active", b.getAttribute("data-view") === view);
+  });
+}
+
+// ================= NAVIGATION =================
+function setStep(n) {
+  [1, 2, 3].forEach(function(s) {
+    document.getElementById("step" + s).classList.toggle("hidden", s !== n);
+    document.getElementById("tab" + s).classList.toggle("active", s === n);
+  });
+}
+function show(id) { document.getElementById(id).classList.remove("hidden"); }
+function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+// ================= INIT =================
+document.getElementById("letterArea").value = LETTER_TEMPLATE;
+render();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" nonce="oMz9GdKb0uvcFvWVsGwuaw==" data-cf-beacon='{"version":"2024.11.0","token":"36b4216ae2dc4d5488c249161e71fe1e","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
